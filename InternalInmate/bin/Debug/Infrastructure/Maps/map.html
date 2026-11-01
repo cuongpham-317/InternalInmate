@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chọn vị trí</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    html, body, #map { height: 100%; margin: 0; padding: 0; }
+    .hint {
+      position: absolute; z-index: 1000; left: 12px; bottom: 12px;
+      background: rgba(255,255,255,.92); padding: 8px 12px; border-radius: 6px;
+      font: 13px/1.4 Segoe UI, sans-serif; box-shadow: 0 1px 4px rgba(0,0,0,.2);
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="hint">Nhấp bản đồ để chọn vị trí. Kéo marker để tinh chỉnh.</div>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    var map = L.map('map').setView([16.0471, 108.2062], 6);
+    var tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; OpenStreetMap contributors'
+    });
+    tiles.on('tileerror', function () {
+      var hintEl = document.querySelector('.hint');
+      if (hintEl) {
+        hintEl.textContent = 'Không tải được bản đồ (mạng hoặc dịch vụ tile). Vẫn có thể nhập tọa độ thủ công trên form.';
+      }
+    });
+    tiles.addTo(map);
+    var marker = null;
+
+    function placeMarker(lat, lng, pan) {
+      if (marker) {
+        marker.setLatLng([lat, lng]);
+      } else {
+        marker = L.marker([lat, lng], { draggable: true }).addTo(map);
+        marker.on('dragend', function () {
+          var p = marker.getLatLng();
+          notify(p.lat, p.lng);
+        });
+      }
+      if (pan) {
+        map.setView([lat, lng], Math.max(map.getZoom(), 14));
+      }
+      notify(lat, lng);
+    }
+
+    function notify(lat, lng) {
+      try {
+        if (window.external && window.external.OnLocationPicked) {
+          window.external.OnLocationPicked(lat, lng);
+        }
+      } catch (e) {}
+
+      if (window.chrome && window.chrome.webview) {
+        var payload = JSON.stringify({ lat: lat, lng: lng });
+        window.chrome.webview.postMessage(payload);
+      }
+    }
+
+    map.on('click', function (e) {
+      placeMarker(e.latlng.lat, e.latlng.lng, false);
+    });
+
+    window.setMapLocation = function (lat, lng) {
+      placeMarker(lat, lng, true);
+    };
+  </script>
+</body>
+</html>
