@@ -24,10 +24,9 @@ namespace InternalInmate.Infrastructure.Repositories
             using (var conn = new SqlConnection(_connectionString))
             {
                 await conn.OpenAsync(cancellationToken);
-                var sql = @"
-INSERT INTO AuditLog (Action, EntityType, EntityId, Detail, UserName, CreatedAt)
-VALUES (@Action, @EntityType, @EntityId, @Detail, @UserName, @CreatedAt);
-SELECT SCOPE_IDENTITY();";
+                var sql = @"INSERT INTO AuditLog (Action, EntityType, EntityId, Detail, UserName, CreatedAt)
+                            VALUES (@Action, @EntityType, @EntityId, @Detail, @UserName, @CreatedAt);
+                            SELECT SCOPE_IDENTITY();";
 
                 using (var cmd = new SqlCommand(sql, conn))
                 {
@@ -37,7 +36,6 @@ SELECT SCOPE_IDENTITY();";
                     cmd.Parameters.AddWithValue("@Detail", (object)log.Detail ?? DBNull.Value);
                     cmd.Parameters.AddWithValue("@UserName", log.UserName ?? Environment.UserName);
                     cmd.Parameters.AddWithValue("@CreatedAt", log.CreatedAt);
-
                     log.Id = Convert.ToInt32(await cmd.ExecuteScalarAsync(cancellationToken));
                 }
             }
